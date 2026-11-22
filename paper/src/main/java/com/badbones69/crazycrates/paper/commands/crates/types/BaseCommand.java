@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import us.crazycrew.crazycrates.api.enums.types.CrateType;
 import us.crazycrew.crazycrates.api.enums.types.KeyType;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -283,27 +284,50 @@ public abstract class BaseCommand {
         }
 
         if (offlinePlayer != null) {
-            final PlayerReceiveKeyEvent event = new PlayerReceiveKeyEvent(offlinePlayer, crate, PlayerReceiveKeyEvent.KeyReceiveReason.GIVE_COMMAND, clamp);
+            OfflinePlayer target = offlinePlayer;
+
+            final String name = Optional.ofNullable(target.getName()).orElse("");
+            final boolean mojangVerified = !name.isEmpty() && !target.getUniqueId().equals(UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8)));
+
+            if (!target.hasPlayedBefore() && !mojangVerified && !name.isEmpty()) {
+                for (final OfflinePlayer candidate : this.server.getOfflinePlayers()) {
+                    final String candidateName = candidate.getName();
+
+                    if (candidateName != null && candidateName.equalsIgnoreCase(name)) {
+                        target = candidate;
+
+                        break;
+                    }
+                }
+            }
+
+            if (!target.hasPlayedBefore() && !mojangVerified) {
+                Message.player_not_found.sendMessage(sender, Map.of("{player}", name));
+
+                return;
+            }
+
+            final PlayerReceiveKeyEvent event = new PlayerReceiveKeyEvent(target, crate, PlayerReceiveKeyEvent.KeyReceiveReason.GIVE_COMMAND, clamp);
 
             this.pluginManager.callEvent(event);
 
             if (event.isCancelled()) return;
 
-            if (!this.userManager.addOfflineKeys(offlinePlayer.getUniqueId(), fileName, type, clamp)) {
+            if (!this.userManager.addOfflineKeys(target.getUniqueId(), fileName, type, clamp)) {
                 Message.internal_error.sendMessage(sender);
             } else {
-                final String name = Optional.ofNullable(offlinePlayer.getName()).orElse("N/A");
+                final String resolvedName = Optional.ofNullable(target.getName()).orElse(name);
 
                 final Map<String, String> placeholders = Map.of(
                     "{keytype}", type.getFriendlyName(),
                     "{amount}", String.valueOf(clamp),
                     "{key}", crate.getKeyName(),
-                    "{player}", name
+                    "{player}", resolvedName
                 );
 
                 Message.command_gave_offline_player_keys.sendMessage(sender, placeholders);
 
-                EventManager.logEvent(EventType.event_key_given, name, sender, crate, type, clamp);
+                EventManager.logEvent(EventType.event_key_given, resolvedName, sender, crate, type, clamp);
             }
         }
     }

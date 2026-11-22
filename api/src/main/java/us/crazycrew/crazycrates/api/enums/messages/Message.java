@@ -165,6 +165,7 @@ public enum Message {
     obtaining_keys("Messages.Obtaining-Keys", "player.obtaining.keys", "{prefix}<gray>You have been given <gold>{amount} {key} <gray>key(s).", "player", "obtaining-keys"),
 
     not_online("Messages.Not-Online", "player.not.online", "{prefix}<red>{player} <gray>is not online.", "player", "target-not-online"),
+    player_not_found("", "player.not.found", "{prefix}<red>Player <gold>{player} <red>was not found. They may not have joined the server yet.", "player", "target-not-found"),
     not_a_crate("Messages.Not-A-Crate", "crates.not.a.crate", "{prefix}<red>There is no crate called <gold>{crate}.", "crates", "requirements", "not-a-crate"),
     not_a_key("", "crates.not.a.key", "{prefix}<red>There is no key called <gold>{key}.", "crates", "requirements", "not-a-key"),
     not_a_number("Messages.Not-A-Number", "crates.not.a.number", "{prefix}<gold>{number} <red>is not a number.", "crates", "requirements", "not-a-number"),
